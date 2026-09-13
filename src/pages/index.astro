@@ -1,0 +1,507 @@
+---
+import MetaPage from "@/components/MetaPage.astro"
+import Layout from "@/layouts/Layout.astro"
+import { getPosts } from "@/lib/content"
+import { getRecordEntries as getBookEntries } from "@/record/book"
+import { getRecordEntries as getFilmEntries } from "@/record/film"
+import { getRecordEntries as getGameEntries } from "@/record/game"
+import { getRecordEntries as getOtherEntries } from "@/record/other"
+import { Image } from "astro:assets"
+import banner1 from "@/assets/banner/banner1.png"
+import banner2 from "@/assets/banner/banner2.png"
+import banner3 from "@/assets/banner/banner3.png"
+import banner4 from "@/assets/banner/banner4.png"
+import banner5 from "@/assets/banner/banner5.png"
+import banner6 from "@/assets/banner/banner6.gif"
+import banner7 from "@/assets/banner/banner7.png"
+import banner8 from "@/assets/banner/banner8.png"
+import banner9 from "@/assets/banner/banner9.png"
+import banner10 from "@/assets/banner/banner10.png"
+
+const posts = await getPosts()
+const latestPosts = posts.slice(0, 5)
+
+const latestRecords = [
+  ...getBookEntries(),
+  ...getFilmEntries(),
+  ...getGameEntries(),
+  ...getOtherEntries(),
+].sort((a, b) => {
+  if (!a.date && !b.date) return 0
+  if (!a.date) return 1
+  if (!b.date) return -1
+  return b.date.getTime() - a.date.getTime()
+})
+  .slice(0, 5)
+
+const linkBanners = [
+  { image: banner1, href: "https://compslink.jp" },
+  { image: banner2, href: "https://peyopeyo.ltt.jp/ps/" },
+  { image: banner3, href: "https://www.nishishi.com/cgi/tegalog/" },
+  { image: banner4, href: "https://sites.google.com/view/yuruyuru-heigh-ho/" },
+  { image: banner5, href: "https://aikbkr.web.fc2.com/ok/" },
+  { image: banner6, href: "https://flanetcomics.net/union/site_enjoy/" },
+  { image: banner7, href: "https://gedounohakarai.lsv.jp/doumei/sitecustom-omoroi" },
+  { image: banner8, href: "https://yougelove.witchserver.jp/" },
+  { image: banner9, href: "https://chocomintlove.witchserver.jp/" },
+  { image: banner10, href: "https://ooiamoasmbjussaa.web.fc2.com/" },
+]
+---
+
+<Layout>
+  <MetaPage slot="head" />
+  <div class="home">
+    <div class="home__grid">
+      <article class="home__panel home__panel--about">
+        <div class="home__panelbody">
+          <p class="home__about-text">
+            趣味や日々の記録をまとめている個人サイトです📝<br>
+            つぶやきを中心に、読書・映画・ゲームの記録、ブログ、二次創作小説などを更新しています。<br>
+            初めての方は<a href="/info" class="home__info-link">INFO</a>をご一読ください。
+          </p>
+        </div>
+      </article>
+
+      <article class="home__panel home__panel--lucky">
+        <div class="home__panelbar">
+          <span class="home__paneltitle">TODAY'S LUCKY ITEM</span>
+        </div>
+        <div class="home__panelbody home__panelbody--center">
+          <p class="home__lucky-label" data-lucky-label>-</p>
+          <p class="home__lucky" data-lucky>-</p>
+        </div>
+      </article>
+
+      <article class="home__panel home__panel--blog">
+        <div class="home__panelbar">
+          <span class="home__paneltitle">BLOG</span>
+          <a href="/blog" class="home__viewall">VIEW ALL →</a>
+        </div>
+        <ul class="home__list">
+          {latestPosts.map((p) => (
+            <li class="home__listitem">
+              <a href={`/blog/${p.id}`} class="home__listlink">
+                <span class="home__date">{p.data.date?.toLocaleDateString("ja-JP") ?? "—"}</span>
+                <span class="home__listmain">
+                  <span class="home__listtext">{p.data.title}</span>
+                  {p.data.tags && p.data.tags.length > 0 && (
+                      <span class="home__blogtag">
+                        {p.data.tags.slice(0, 2).map((tag) => (
+                          <span class="home__tagchip">#{tag}</span>
+                        ))}
+                      </span>
+                   
+                  )}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </article>
+
+      <article class="home__panel home__panel--records">
+        <div class="home__panelbar">
+          <span class="home__paneltitle">RECORD</span>
+          <a href="/record" class="home__viewall">VIEW ALL →</a>
+        </div>
+        <ul class="home__list">
+          {latestRecords.map((l) => (
+            <li class="home__listitem home__listitem--record">
+              <span class="home__date">{l.date?.toLocaleDateString("ja-JP") ?? "—"}</span>
+              <span class={`home__tag home__tag--${l.category}`}>
+                {l.category === "book"
+                  ? "BOOK"
+                  : l.category === "movie"
+                    ? "FILM"
+                    : l.category === "game"
+                      ? "GAME"
+                      : "OTHER"}
+              </span>
+              <span class="home__listtext">{l.title}</span>
+            </li>
+          ))}
+        </ul>
+      </article>
+    </div>
+
+    <article class="home__panel home__panel--link-banner">
+      <div class="home__panelbar">
+        <span class="home__paneltitle">LINK</span>
+      </div>
+      <div class="home__panelbody home__panelbody--banner">
+        <ul class="home__banner-grid" aria-label="Link banners">
+          {linkBanners.map((banner, index) => (
+            <li class="home__banner-item">
+              <a
+                href={banner.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="home__banner-link"
+                aria-label={`Open link banner ${index + 1}`}
+              >
+                <Image
+                  src={banner.image}
+                  alt={`Link Banner ${index + 1}`}
+                  class="home__banner-image"
+                  loading="lazy"
+                  sizes="(max-width: 40rem) 50vw, (max-width: 64rem) 25vw, 20vw"
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </article>
+  </div>
+</Layout>
+
+<script>
+  function updateTodaysLucky() {
+    const LUCKY = [
+      "50km/hの速度制限標識",
+      "40km/hの速度制限標識",
+      "一時停止標識",
+      "信号がない横断歩道",
+      "信号がある横断歩道",
+      "メモ帳",
+      "手帳",
+      "ボールペン（黒）",
+      "ボールペン（黒以外）",
+      "蛍光ペン",
+      "油（ヘアオイルなどでも可）",
+      "マンホール",
+      "2台以上並んだ自動販売機",
+      "1台だけで置いてある自動販売機",
+      "消火器",
+      "郵便ポスト",
+      "レシート",
+      "軽トラック",
+      "食品運搬トラック",
+      "新しいガードレール",
+      "古いガードレール",
+      "カーブミラー",
+      "きれいな鏡",
+      "腕時計",
+      "人が座っているベンチ",
+      "人が座っていないベンチ",
+      "通話中の人",
+      "帽子を被った人",
+      "開いている窓",
+      "閉じている窓",
+      "開いている傘",
+      "閉じている傘",
+      "鳥の鳴き声（1音）",
+      "鳥の鳴き声（連続音）",
+      "無地の付箋",
+      "イラストが描かれた付箋",
+      "文字が書かれた付箋",
+      "10段以上の階段",
+      "10段以下の階段",
+      "丈30cm以上の植物",
+      "丈30cm以下の植物",
+      "側溝",
+      "グレーチングがついた側溝",
+      "カラーコーン",
+      "花壇",
+      "境界杭",
+      "カップコースター",
+      "デジタル時計",
+      "アナログ時計",
+      "鍵",
+      "キーホルダー",
+      "爪切り",
+      "JPOP",
+      "洋楽",
+      "EDM",
+      "ジャズ",
+      "クラシック音楽",
+      "ゲームで使われた曲",
+      "映画で使われた曲",
+      "映画の主題歌",
+      "アニメの主題歌",
+      "昔好きだった曲",
+      "セリフ体のフォント",
+      "サンセリフ体のフォント",
+    ]
+
+    // 日本時間での日付を計算
+    const now = new Date()
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000
+    const japanTime = new Date(utcTime + 9 * 60 * 60000)
+
+    // 日本時間の日付をフォーマット
+    const year = japanTime.getFullYear()
+    const monthNum = japanTime.getMonth() + 1
+    const dateNum = japanTime.getDate()
+    const dateStr = `${year}/${monthNum}/${dateNum}`
+
+    const seed = year * 10000 + monthNum * 100 + dateNum
+    const luckyIndex = (seed * 9301 + 49297) % LUCKY.length
+    const todaysLucky = LUCKY[luckyIndex]
+
+    // DOM を更新
+    const luckyElement = document.querySelector("[data-lucky]")
+    const labelElement = document.querySelector("[data-lucky-label]")
+
+    if (luckyElement) luckyElement.textContent = todaysLucky
+    if (labelElement) labelElement.textContent = dateStr
+  }
+
+  // ページ読み込み時に実行
+  updateTodaysLucky()
+
+  // DOMContentLoaded のタイミングでも実行（念のため）
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", updateTodaysLucky)
+  }
+</script>
+
+<style>
+  .home__grid {
+    display: grid;
+  }
+
+  @media (width >= 64rem) {
+    .home__grid {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto;
+    }
+    .home__panel--about {
+      grid-column: 1 / 3;
+      grid-row: 1;
+    }
+    .home__panel--lucky {
+      grid-column: 1 / 3;
+      grid-row: 2;
+    }
+    .home__panel--blog {
+      grid-column: 1;
+      grid-row: 3;
+      margin-right: 2rem;
+    }
+    .home__panel--records {
+      grid-column: 2;
+      grid-row: 3;
+      margin-left: 2rem;
+    }
+  }
+
+ 
+  .home__panel {
+    min-width: 0;
+  }
+  .home__panelbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.2rem;
+  }
+  .home__paneltitle {
+    font-size: var(--step-3);
+    letter-spacing: 0.03em;
+    color: var(--muted-foreground);
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  .home__viewall {
+    font-size: var(--step--3);
+    letter-spacing: 0.1em;
+    text-decoration: none;
+    color: var(--destructive);
+    transition: color 120ms;
+  }
+  .home__viewall:hover {
+    color: var(--destructive);
+  }
+
+
+  .home__panelbody {
+    margin-bottom: 2rem;
+  }
+
+  .home__about-text {
+    margin-top: var(--space-s);
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    line-height: 1.65;
+    color: var(--muted-foreground);
+  }
+  .home__panelbody--center {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+  .home__lucky {
+    font-size: var(--step--2);
+  }
+  .home__lucky-label {
+    font-size: var(--step--3);
+    color: var(--muted-foreground);
+    flex-shrink: 0;
+    text-align: left;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    min-width: 3.5rem;
+  }
+  .home__info-link {
+    color: var(--destructive);
+    transition: color 120ms;
+    letter-spacing: 0.05em;
+  }
+
+
+  .home__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    margin-bottom: 0.5rem;
+  }
+  .home__listitem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0rem;
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .home__listitem:last-child {
+    margin-bottom: 2rem;
+  }
+  .home__listlink {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: var(--foreground);
+    min-width: 0;
+    width: 100%;
+  }
+  .home__listmain {
+    display: flex;
+    min-width: 0;
+    width: 100%;
+    gap: 0.15rem;
+  }
+  .home__listlink:hover .home__listtext {
+    color: var(--destructive);
+  }
+  .home__listlink:hover {
+    color: var(--destructive);
+  }
+  .home__date {
+    font-size: var(--step--3);
+    color: var(--muted-foreground);
+    flex-shrink: 1;
+    text-align: left;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+    min-width: 3.5rem;
+  }
+  .home__listtext {
+    font-size: var(--step--2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+  }
+  .home__blogtag {
+    display: inline-flex;
+  }
+  .home__tagchip {
+    font-size: var(--step--3);
+    letter-spacing: 0.06em;
+    padding: 0 0.25rem;
+    color: color-mix(in oklab, var(--destructive) 78%, var(--foreground));
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+  }
+  
+
+  .home__listitem--record {
+    gap: 0.5rem;
+  }
+  .home__tag {
+    font-family:  Consolas, monospace;
+    font-size: var(--step--3);
+    padding: 0.05rem 0.28rem;
+    border: 1px solid;
+    flex-shrink: 0;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  .home__tag--book {
+    color: #eab308;
+    border-color: #eab308;
+  }
+  .home__tag--movie {
+    color: #f97316;
+    border-color: #f97316;
+  }
+  .home__tag--game {
+    color: #22c55e;
+    border-color: #22c55e;
+  }
+  .home__tag--other {
+    color: var(--muted-foreground);
+    border-color: var(--border);
+  }
+
+  .home__panel--link-banner {
+    border-bottom: 0;
+  }
+
+  .home__banner-grid {
+    list-style: none;
+    margin: 0;
+    padding: 1rem;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .home__banner-item {
+    margin: 0;
+    padding: 0;
+    aspect-ratio: 200 / 40;
+    overflow: hidden;
+    border: none;
+  }
+
+  .home__banner-link {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .home__banner-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    transition: transform 180ms ease;
+  }
+
+  .home__banner-item:hover .home__banner-image {
+  filter: brightness(0.9);
+  }
+
+  @media (width >= 40rem) {
+    .home__banner-grid {
+      grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+    }
+  }
+  @media (width >= 64rem) {
+    .home__date {
+      min-width: 4.2rem;
+    }
+  }
+</style>
+
+<style is:global>
+@media screen and (width >= 64rem) {
+  page-content {
+    padding-inline-end: clamp(8rem, 6vw, 10rem) !important;
+  }
+} 
+</style>

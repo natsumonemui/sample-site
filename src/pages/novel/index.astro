@@ -1,0 +1,27 @@
+---
+import MetaPage from "@/components/MetaPage.astro"
+import PaginatedPostIndex from "@/components/PaginatedPostIndex.astro"
+import Layout from "@/layouts/Layout.astro"
+import { getPosts } from "@/lib/content"
+
+const allPosts = await getPosts("novel")
+const posts = allPosts.slice(0, 10)
+const allTags = Array.from(
+  new Set(allPosts.flatMap((post) => post.data.tags ?? [])),
+).sort((a, b) => a.localeCompare(b, "ja-JP"))
+const lastPage = Math.ceil(allPosts.length / 10)
+---
+
+<Layout>
+  <MetaPage slot="head" title="NOVEL" />
+  <PaginatedPostIndex
+    title="NOVEL"
+    posts={posts}
+    allPosts={allPosts}
+    allTags={allTags}
+    totalPosts={allPosts.length}
+    basePath="novel"
+    currentPage={1}
+    lastPage={lastPage}
+  />
+</Layout>

@@ -1,0 +1,155 @@
+---
+import { Image } from "astro:assets"
+import { type CollectionEntry } from "astro:content"
+
+type Props = {
+  post: CollectionEntry<"blog"> | CollectionEntry<"novel">
+  basePath?: "blog" | "novel"
+}
+
+const { post, basePath = "blog" } = Astro.props
+const hrefPrefix = basePath === "novel" ? "/novel" : "/blog"
+const characters = post.data.characters?.trim()
+---
+
+<li data-post-card data-tags={(post.data.tags ?? []).join("||")}>
+  {post.data.image && (
+      <a href={`${hrefPrefix}/${post.id}`} tabindex="-1" aria-hidden="true">
+        <Image src={post.data.image} alt="" width={640} height={336} />
+      </a>
+    )}
+  <entry-info><a href={`${hrefPrefix}/${post.id}`}>{post.data.title}</a>
+    <p>{post.data.description}</p>
+    <entry-meta>
+      <time datetime={post.data.date.toISOString()}
+        >{post.data.date.toLocaleDateString("ja-JP")}</time>
+      {characters && <span class="entry-characters">{characters}</span>}
+      {post.data.tags && (
+          <entry-tags>
+            {post.data.tags.slice(0, 4).map((tag) => (
+              <span>#{tag}</span>
+            ))}
+          </entry-tags>
+        )}
+    </entry-meta>
+    
+  </entry-info>
+</li>
+
+<style>
+  li {
+    display: flex;
+    align-items: stretch;
+    padding: var(--space-m) var(--space-s);
+    min-width: 0;
+    position: relative;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    > a {
+      flex-shrink: 0;
+      inline-size: 12.5rem;
+      border: 1px solid var(--border);
+      align-self: center;
+
+      :global(img) {
+        inline-size: 100%;
+        block-size: 7.1rem;
+        object-fit: cover;
+        display: block;
+      }
+    }
+
+    entry-info {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+
+      > a {
+        font-size: var(--step-0);
+        line-height: 1.5;
+        font-weight: var(--font-weight-medium);
+        letter-spacing: 0.01em;
+        margin-block-end: 0.4rem;
+        text-decoration: none;
+
+        &:hover {
+          color: var(--destructive);
+        }
+      }
+
+      entry-meta {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: var(--space-xs);
+
+        time {
+          color: var(--orange-9);
+          white-space: nowrap;
+          flex-shrink: 0;
+          font-size: var(--step--2);
+        }
+
+        .entry-characters {
+          color: var(--orange-9);
+          white-space: nowrap;
+          font-size: var(--step--2);
+        }
+
+        entry-tags {
+          display: flex;
+          flex-wrap: wrap;
+          column-gap: var(--space-2xs);
+
+          span {
+            color: var(--orange-9);
+            letter-spacing: 0.06em;
+            font-size: var(--step--2);
+          }
+        }
+      }
+
+      p {
+        font-size: var(--step--2);
+        line-height: 1.6;
+        color: var(--muted-foreground);
+        white-space: pre-line;
+        margin-block-end: 0.2rem;
+      }
+    }
+
+    @media (width < 40rem) {
+      flex-direction: column;
+      gap: var(--space-xs);
+
+      > a {
+        inline-size: 100%;
+        max-inline-size: 32rem;
+
+        :global(img) {
+          block-size: auto;
+        }
+      }
+    }
+  }
+  
+  li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.8rem;
+    bottom: 0.8rem;
+    width: 0.1rem;
+    background: var(--orange-9);
+  }
+</style>
+<style is:global>
+@media screen and (width >= 64rem) {
+  page-content {
+    padding-inline-end: clamp(8rem, 6vw, 10rem) !important;
+  }
+}
+</style>

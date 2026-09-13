@@ -1,0 +1,193 @@
+---
+import MetaPost from "@/components/MetaPost.astro"
+import PostActions from "@/components/PostActions.astro"
+import SeriesReader from "@/components/SeriesReader.astro"
+import TableOfContents from "@/components/TableOfContents.astro"
+import Layout from "@/layouts/Layout.astro"
+import { getPosts, getSubposts, pageTitle } from "@/lib/content"
+import { isSubpost, subpostSlug } from "@/lib/utils"
+import { Image } from "astro:assets"
+import { getEntries, render, type CollectionEntry } from "astro:content"
+
+export async function getStaticPaths() {
+  const posts = await getPosts()
+  const series = await getSubposts()
+  return posts.flatMap((parent, i) => {
+    const chain = [parent, ...(series.get(parent.id) ?? [])]
+    return chain.map((post) => ({
+      params: { id: post.id },
+      props: { post, chain, prev: posts[i + 1], next: posts[i - 1] },
+    }))
+  })
+}
+
+type Props = {
+  post: CollectionEntry<"blog">
+  chain: CollectionEntry<"blog">[]
+  prev?: CollectionEntry<"blog">
+  next?: CollectionEntry<"blog">
+}
+
+const { post, chain, prev, next } = Astro.props
+const [parent] = chain
+const formatYmd = (date: Date) => {
+  const year = date.getUTCFullYear()
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0")
+  const day = String(date.getUTCDate()).padStart(2, "0")
+
+  return `${year}/${month}/${day}`
+}
+
+const rendered = await Promise.all(
+  chain.map(async (entry) => ({
+    entry,
+    ...(await render(entry)),
+  })),
+)
+
+const sections = rendered.map(({ entry, headings }, i) => ({
+  id: i === 0 ? undefined : subpostSlug(entry.id),
+  label: entry.data.title,
+  open: entry.id === post.id,
+  headings: headings.filter(
+    ({ depth, text }) => depth >= 2 && depth <= 4 && text.trim(),
+  ),
+}))
+const hasToc =
+  sections.length > 1 || sections.some(({ headings }) => headings.length > 0)
+
+const crumbs = [{ label: parent.data.title, href: `/blog/${parent.id}` }]
+if (isSubpost(post.id)) {
+  crumbs.push({ label: post.data.title, href: `/blog/${post.id}` })
+}
+---
+
+<Layout crumbs={crumbs}>
+  <MetaPost slot="head" post={post} />
+  {hasToc && (
+      <TableOfContents
+        slot="toc"
+        title={parent.data.title}
+        sections={sections}
+      />
+    )}
+  <PostActions slot="actions" prev={prev} next={next} />
+  {rendered.map(({ entry, Content }, i) => (
+      <article
+        id={i === 0 ? undefined : subpostSlug(entry.id)}
+        data-url={`/blog/${entry.id}`}
+        data-title={pageTitle(entry.data.title)}
+        data-embedded={i > 0 || undefined}
+      >
+        <header>
+          <h1>{entry.data.title}</h1>
+          <post-meta>
+            <time datetime={entry.data.date.toISOString()}
+              >{formatYmd(entry.data.date)}</time
+            >
+            {entry.data.tags && (
+              <post-tags>
+                {entry.data.tags.map((tag) => (
+                  <a href={`/tags/${tag}`}>#{tag}</a>
+                ))}
+              </post-tags>
+            )}
+          </post-meta>
+          <p>{entry.data.description}</p>
+        </header>
+        {entry.data.image && (
+          <post-banner>
+            <Image
+              src={entry.data.image}
+              alt={entry.data.title}
+              width={1200}
+              height={630}
+              priority={entry.id === post.id || undefined}
+            />
+          </post-banner>
+        )}
+        <prose-content>
+          <Content />
+        </prose-content>
+      </article>
+    ))}
+  {chain.length > 1 && <SeriesReader />}
+</Layout>
+
+<script>
+  function applyBlogYoutubeClass() {
+    const iframes = document.querySelectorAll(
+      'prose-content iframe[src*="youtube.com/embed/"], prose-content iframe[src*="youtube-nocookie.com/embed/"]',
+    )
+
+    for (const iframe of iframes) {
+      iframe.classList.add("blog-youtube")
+    }
+  }
+
+  applyBlogYoutubeClass()
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", applyBlogYoutubeClass)
+  }
+</script>
+
+<style>
+  header {
+    margin-block-end: var(--space-m);
+
+    h1 {
+      font-size: var(--step-2);
+      line-height: calc(var(--leading-offset) + 1em);
+      font-weight: var(--font-weight-medium);
+    }
+
+    post-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-xs);
+      margin-block-start: var(--space-3xs);
+      font-size: var(--step--1);
+      color: var(--orange-9);
+
+      post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--space-3xs);
+
+        time {
+          color: var(--orange-9);
+        }
+
+        a {
+          color: var(--orange-9);
+
+          &:hover {
+            color: var(--orange-9);
+          }
+        }
+      }
+
+      a {
+        color: var(--foreground);
+      }
+    }
+
+    > p {
+      margin-block-start: var(--space-2xs);
+      font-size: var(--step--1);
+      color: var(--muted-foreground);
+    }
+  }
+
+  post-banner {
+    display: block;
+    margin-block-end: var(--space-m);
+
+    :global(img) {
+      inline-size: 100%;
+      block-size: auto;
+    }
+  }
+</style>

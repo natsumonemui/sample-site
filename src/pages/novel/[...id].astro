@@ -1,0 +1,180 @@
+---
+import MetaPost from "@/components/MetaPost.astro"
+import AgeGate from "@/components/AgeGate.astro"
+import PostActions from "@/components/PostActions.astro"
+import SeriesReader from "@/components/SeriesReader.astro"
+import TableOfContents from "@/components/TableOfContents.astro"
+import Layout from "@/layouts/Layout.astro"
+import { getPosts, getSubposts, pageTitle } from "@/lib/content"
+import { formatDate, isSubpost, subpostSlug } from "@/lib/utils"
+import { Image } from "astro:assets"
+import { getEntries, render, type CollectionEntry } from "astro:content"
+
+export async function getStaticPaths() {
+  const posts = await getPosts("novel")
+  const series = await getSubposts("novel")
+  return posts.flatMap((parent, i) => {
+    const chain = [parent, ...(series.get(parent.id) ?? [])]
+    return chain.map((post) => ({
+      params: { id: post.id },
+      props: { post, chain, prev: posts[i + 1], next: posts[i - 1] },
+    }))
+  })
+}
+
+type Props = {
+  post: CollectionEntry<"novel">
+  chain: CollectionEntry<"novel">[]
+  prev?: CollectionEntry<"novel">
+  next?: CollectionEntry<"novel">
+}
+
+const { post, chain, prev, next } = Astro.props
+const [parent] = chain
+const rendered = await Promise.all(
+  chain.map(async (entry) => ({
+    entry,
+    ...(await render(entry)),
+  })),
+)
+
+const sections = rendered.map(({ entry, headings }, i) => ({
+  id: i === 0 ? undefined : subpostSlug(entry.id),
+  label: entry.data.title,
+  open: entry.id === post.id,
+  headings: headings.filter(
+    ({ depth, text }) => depth >= 2 && depth <= 4 && text.trim(),
+  ),
+}))
+const hasToc =
+  sections.length > 1 || sections.some(({ headings }) => headings.length > 0)
+
+const crumbs = [{ label: parent.data.title, href: `/novel/${parent.id}` }]
+if (isSubpost(post.id)) {
+  crumbs.push({ label: post.data.title, href: `/novel/${post.id}` })
+}
+
+const showAgeGate = post.data.adult === true
+---
+
+<Layout crumbs={crumbs}>
+  {showAgeGate && <AgeGate />}
+  <MetaPost slot="head" post={post} />
+  {hasToc && (
+      <TableOfContents
+        slot="toc"
+        title={parent.data.title}
+        sections={sections}
+      />
+    )}
+  <PostActions slot="actions" prev={prev} next={next} basePath="novel" />
+  {rendered.map(({ entry, Content }, i) => (
+      <article
+        id={i === 0 ? undefined : subpostSlug(entry.id)}
+        data-url={`/novel/${entry.id}`}
+        data-title={pageTitle(entry.data.title)}
+        data-embedded={i > 0 || undefined}
+      >
+        <header>
+          <h1>{entry.data.title}</h1>
+          <post-meta>
+            <p>{entry.data.description}</p>
+            <time datetime={entry.data.date.toISOString()}
+          >{entry.data.date.toLocaleDateString("ja-JP")}</time>
+            {entry.data.tags && (
+              <post-tags>
+            {entry.data.tags.map((tag) => (
+            <span>#{tag}</span>
+  ))}
+</post-tags>
+            )} 
+           
+          </post-meta>
+         
+        </header>
+        {entry.data.image && (
+          <post-banner>
+            <Image
+              src={entry.data.image}
+              alt={entry.data.title}
+              width={1200}
+              height={630}
+              priority={entry.id === post.id || undefined}
+            />
+          </post-banner>
+        )}
+        <prose-content>
+          <Content />
+        </prose-content>
+      </article>
+    ))}
+  {chain.length > 1 && <SeriesReader />}
+</Layout>
+
+<style>
+  article[data-embedded] {
+    margin-block-start: var(--space-xl);
+    padding-block-start: var(--space-xl);
+    border-block-start: 2px solid var(--border);
+    scroll-margin-block-start: calc(-2px - 0.2 * var(--step-2));
+  }
+
+  header {
+      position: relative;
+      margin-block-end: var(--space-m);
+      padding: var(--space-xs);
+
+    h1 {
+      font-size: var(--step-0);
+      line-height: 1.5;
+      font-weight: var(--font-weight-medium);
+      letter-spacing: 0.01em;
+      margin-block-end: 0.4rem;
+    }
+
+    post-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: var(--space-2xs);
+      margin-block-start: var(--space-3xs);
+      font-size: var(--step--2);
+      color: var(--orange-9);
+
+      post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        column-gap: var(--space-2xs);
+      }
+
+      a {
+        color: var(--foreground);
+      }
+      
+    > p {
+        flex-basis: 100%;
+        font-size: var(--step--2);
+        color: var(--muted-foreground);
+        white-space: pre-wrap;
+      }
+    }
+  }
+  post-banner {
+    display: block;
+    margin-block-end: var(--space-m);
+
+    :global(img) {
+      inline-size: 100%;
+      block-size: auto;
+    }
+  }
+header::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3rem;
+  bottom: 0.3rem;
+  width: 0.1rem;
+  background: var(--orange-9);
+}
+</style>

@@ -1,0 +1,193 @@
+---
+type Props = {
+  title?: string
+  message?: string
+  yesLabel?: string
+  noLabel?: string
+  redirectTo?: string
+}
+
+const {
+  title = "18歳以上ですか？",
+  message = "このページは18歳以上を対象としたコンテンツです。",
+  yesLabel = "はい",
+  noLabel = "いいえ",
+  redirectTo = "/",
+} = Astro.props
+---
+
+<div class="age-gate" data-age-gate>
+  <div class="age-gate__backdrop" data-age-gate-backdrop></div>
+
+  <div
+    class="age-gate__dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="age-gate-title"
+    aria-describedby="age-gate-message"
+    data-age-gate-dialog
+    tabindex="-1"
+  >
+    <p id="age-gate-message" class="age-gate__message">{message}</p>
+    <h2 id="age-gate-title" class="age-gate__title">{title}</h2>
+
+    <div class="age-gate__actions">
+      <button type="button" data-age-gate-yes>{yesLabel}</button>
+      <button type="button" data-age-gate-no data-redirect-to={redirectTo}>{noLabel}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const gate = document.querySelector("[data-age-gate]") as HTMLElement | null
+  const dialog = gate?.querySelector("[data-age-gate-dialog]") as HTMLElement | null
+  const yesButton = gate?.querySelector("[data-age-gate-yes]") as HTMLButtonElement | null
+  const noButton = gate?.querySelector("[data-age-gate-no]") as HTMLButtonElement | null
+
+  if (gate && dialog && yesButton && noButton) {
+    const html = document.documentElement
+    const body = document.body
+    const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    const redirectTo = noButton.getAttribute("data-redirect-to") || "/"
+
+    const lockPage = () => {
+      html.setAttribute("data-age-gate-open", "true")
+      body.setAttribute("data-age-gate-open", "true")
+    }
+
+    const unlockPage = () => {
+      html.removeAttribute("data-age-gate-open")
+      body.removeAttribute("data-age-gate-open")
+    }
+
+    const closeGate = () => {
+      gate.setAttribute("aria-hidden", "true")
+      gate.setAttribute("data-accepted", "true")
+      unlockPage()
+    }
+
+    const trapFocus = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return
+
+      const focusables = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE)).filter((el) => !el.hasAttribute("disabled"))
+      if (!focusables.length) return
+
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      const active = document.activeElement as HTMLElement | null
+
+      if (!event.shiftKey && active === last) {
+        event.preventDefault()
+        first.focus()
+      }
+
+      if (event.shiftKey && active === first) {
+        event.preventDefault()
+        last.focus()
+      }
+    }
+
+    lockPage()
+    requestAnimationFrame(() => yesButton.focus())
+
+    dialog.addEventListener("keydown", trapFocus)
+
+    yesButton.addEventListener("click", () => {
+      closeGate()
+    })
+
+    noButton.addEventListener("click", () => {
+      window.location.assign(redirectTo)
+    })
+  }
+</script>
+
+<style>
+  .age-gate {
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 2vw, 1.5rem);
+  }
+
+  .age-gate[data-accepted="true"] {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+  }
+
+  .age-gate__backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--foreground) 35%, transparent);
+    backdrop-filter: blur(2px);
+  }
+
+  .age-gate__dialog {
+    position: relative;
+    inline-size: min(80vw, 30rem);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--background);
+    color: var(--foreground);
+    box-shadow: 0 12px 36px color-mix(in srgb, var(--foreground) 20%, transparent);
+    padding: clamp(1.5rem, 1rem + 0.8vw, 1.5rem);
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .age-gate__message {
+    margin: 0;
+    font-size: var(--step-0);
+    line-height: 1.5;
+  }
+
+  .age-gate__title {
+    margin: 0;
+    font-size: var(--step-0);
+    line-height: 1.25;
+  }
+
+  .age-gate__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-m);
+    margin-top: 0.25rem;
+  }
+
+  .age-gate__actions button {
+    min-block-size: 2.75rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--background) 92%, var(--foreground));
+    color: var(--foreground);
+    font: inherit;
+    cursor: pointer;
+    border-radius: 0.75rem;
+  }
+
+  .age-gate__actions button:first-child {
+    border-color: color-mix(in srgb, var(--accent, #f97316) 55%, var(--border));
+    color: var(--accent, #f97316);
+  }
+
+  .age-gate__actions button:focus-visible,
+  .age-gate__actions button:active {
+    outline: 2px solid var(--accent, #f97316);
+    outline-offset: 2px;
+  }
+
+  @media (width < 30rem) {
+    .age-gate__actions {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  :global(html[data-age-gate-open="true"]),
+  :global(body[data-age-gate-open="true"]) {
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+</style>

@@ -1,0 +1,95 @@
+---
+import ArrowUp from "@/assets/icons/arrow-up.svg"
+---
+
+<button
+  data-icon-button
+  data-back-to-top
+  aria-label="Back to top"
+  title="Back to top"
+>
+  <ArrowUp />
+</button>
+
+<style>
+  button {
+    position: fixed;
+    inset-inline-end: var(--grid-gutter);
+    inset-block-end: var(--grid-gutter);
+    z-index: 60;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: color-mix(in oklab, var(--background) 94%, var(--foreground) 6%);
+    color: var(--foreground);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.4rem);
+    transition:
+      opacity 160ms ease,
+      transform 200ms ease,
+      visibility 0s linear 200ms,
+      border-color 120ms ease,
+      color 120ms ease,
+      background-color 120ms ease;
+
+    &[data-visible="true"] {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: translateY(0);
+      transition:
+        opacity 160ms ease,
+        transform 200ms ease,
+        visibility 0s;
+    }
+
+    &:hover {
+      color: color-mix(in oklab, var(--foreground) 85%, #f97316);
+      border-color: color-mix(in oklab, var(--border) 60%, #f97316);
+      background: color-mix(in oklab, var(--background) 88%, var(--foreground) 12%);
+    }
+
+    &:focus-visible {
+      opacity: 1;
+      visibility: visible;
+    }
+  }
+
+  @media (width < 40rem) {
+    button {
+      inset-block-end: calc(5vh + env(safe-area-inset-bottom) + var(--grid-gutter));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    button {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  const button = document.querySelector("[data-back-to-top]")
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)")
+
+  if (button) {
+    const update = () => {
+      const visible = window.scrollY >= 300
+      button.setAttribute("data-visible", visible ? "true" : "false")
+    }
+
+    window.addEventListener("scroll", update, { passive: true })
+    update()
+
+    button.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: reduceMotion.matches ? "auto" : "smooth",
+      })
+    })
+  }
+</script>

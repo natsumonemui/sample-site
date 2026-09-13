@@ -1,0 +1,326 @@
+---
+import { type CollectionEntry } from "astro:content"
+import BlogCard from "@/components/BlogCard.astro"
+import Pagination from "@/components/Pagination.astro"
+
+type PostEntry = CollectionEntry<"blog"> | CollectionEntry<"novel">
+
+type Props = {
+  title: "BLOG" | "NOVEL"
+  posts: PostEntry[]
+  allPosts: PostEntry[]
+  allTags: string[]
+  totalPosts: number
+  basePath: "blog" | "novel"
+  currentPage: number
+  lastPage: number
+}
+
+const {
+  title,
+  posts,
+  allPosts,
+  allTags,
+  totalPosts,
+  basePath,
+  currentPage,
+  lastPage,
+} = Astro.props
+
+const labelPrefix = title === "BLOG" ? "Blog" : "Novel"
+---
+
+<section
+  class="blog-db"
+  aria-label={`${labelPrefix} index dashboard`}
+  data-blog-index
+  data-base-path={basePath}
+  data-current-page={currentPage}
+  data-page-size="10"
+>
+  <header class="blog-db__bar">
+    <h1>{title}</h1>
+    <span data-post-count>{totalPosts} POSTS</span>
+  </header>
+
+  {allTags.length > 0 && (
+    <details class="blog-filter-panel" open>
+      <summary class="blog-filter-panel__toggle">FILTERS</summary>
+      <nav class="blog-filter" aria-label={`${labelPrefix} tag filter`}>
+        <div class="blog-filter-row" aria-label="Filter by tag">
+          <button
+            data-tag-filter-btn
+            data-tag-filter="all"
+            class="blog-filter__btn is-active"
+          >
+            ALL
+          </button>
+          {allTags.map((tag) => (
+            <button data-tag-filter-btn data-tag-filter={tag} class="blog-filter__btn">
+              #{tag}
+            </button>
+          ))}
+        </div>
+      </nav>
+    </details>
+  )}
+
+  <ul class="blog-db__list" data-post-list>
+    {posts.map((post) => <BlogCard post={post} basePath={basePath} />)}
+  </ul>
+
+  <ul class="blog-db__source" data-post-source-list hidden aria-hidden="true">
+    {allPosts.map((post) => <BlogCard post={post} basePath={basePath} />)}
+  </ul>
+
+  <Pagination currentPage={currentPage} lastPage={lastPage} basePath={basePath} />
+</section>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const section = document.querySelector<HTMLElement>("[data-blog-index]")
+    if (!section) return
+
+    const buttons = Array.from(
+      section.querySelectorAll<HTMLButtonElement>("[data-tag-filter-btn]"),
+    )
+    const visibleList = section.querySelector<HTMLUListElement>("[data-post-list]")
+    const sourceList = section.querySelector<HTMLUListElement>("[data-post-source-list]")
+    const countLabel = section.querySelector<HTMLElement>("[data-post-count]")
+    const paginationElement = section.querySelector<HTMLElement>(".pagination")
+
+    if (!visibleList || !sourceList || !countLabel) return
+
+    const pageSize = Number(section.dataset.pageSize ?? "10")
+    const basePath = section.dataset.basePath === "novel" ? "novel" : "blog"
+    const initialPage = Number(section.dataset.currentPage ?? "1")
+    const sourceCards = Array.from(
+      sourceList.querySelectorAll<HTMLElement>("[data-post-card]"),
+    )
+
+    if (buttons.length === 0 || sourceCards.length === 0) return
+
+    let activeTag = "all"
+    let currentPage = initialPage
+
+    const syncHistory = (pageNumber: number, mode: "push" | "replace") => {
+      const url = pageNumber === 1 ? `/${basePath}/` : `/${basePath}/page${pageNumber}/`
+      const state = { tag: activeTag, page: pageNumber }
+
+      if (mode === "push") history.pushState(state, "", url)
+      else history.replaceState(state, "", url)
+    }
+
+    const setActive = (target: HTMLButtonElement) => {
+      buttons.forEach((btn) => btn.classList.remove("is-active"))
+      target.classList.add("is-active")
+    }
+
+    const hrefFor = (pageNumber: number) =>
+      pageNumber === 1 ? `/${basePath}/` : `/${basePath}/page${pageNumber}/`
+
+    const renderPagination = (page: number, lastPage: number) => {
+      if (!paginationElement) return
+
+      const pages = Array.from({ length: lastPage }, (_, index) => index + 1)
+      const prevPage = page > 1 ? page - 1 : undefined
+      const nextPage = page < lastPage ? page + 1 : undefined
+
+      paginationElement.hidden = lastPage <= 1
+      paginationElement.innerHTML = `
+        ${
+          prevPage
+            ? `<a class="pagination__link" href="${hrefFor(prevPage)}" rel="prev" aria-label="Previous page" data-page-number="${prevPage}">←</a>`
+            : `<span class="pagination__link is-disabled" aria-hidden="true">←</span>`
+        }
+        <ol class="pagination__pages">
+          ${pages
+            .map((pageNumber) =>
+              pageNumber === page
+                ? `<li><span class="pagination__link is-active" aria-current="page" data-page-number="${pageNumber}">${pageNumber}</span></li>`
+                : `<li><a class="pagination__link" href="${hrefFor(pageNumber)}" data-page-number="${pageNumber}">${pageNumber}</a></li>`,
+            )
+            .join("")}
+        </ol>
+        ${
+          nextPage
+            ? `<a class="pagination__link" href="${hrefFor(nextPage)}" rel="next" aria-label="Next page" data-page-number="${nextPage}">→</a>`
+            : `<span class="pagination__link is-disabled" aria-hidden="true">→</span>`
+        }
+      `
+    }
+
+    const render = () => {
+      const filteredCards = sourceCards.filter((card) => {
+        if (activeTag === "all") return true
+
+        const raw = card.dataset.tags || ""
+        const cardTags = raw ? raw.split("||") : []
+        return cardTags.includes(activeTag)
+      })
+
+      const lastPage = Math.max(1, Math.ceil(filteredCards.length / pageSize))
+      currentPage = Math.min(currentPage, lastPage)
+      const start = (currentPage - 1) * pageSize
+      const pageCards = filteredCards.slice(start, start + pageSize)
+
+      visibleList.replaceChildren(...pageCards.map((card) => card.cloneNode(true)))
+      countLabel.textContent = `${filteredCards.length} POSTS`
+      renderPagination(currentPage, lastPage)
+
+      buttons.forEach((btn) => {
+        btn.classList.toggle("is-active", btn.dataset.tagFilter === activeTag)
+      })
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tag = btn.dataset.tagFilter
+        if (!tag) return
+        activeTag = tag
+        currentPage = 1
+        setActive(btn)
+        syncHistory(currentPage, "replace")
+        render()
+      })
+    })
+
+    paginationElement?.addEventListener("click", (event) => {
+        const target = event.target as HTMLElement | null
+        const pageLink = target?.closest<HTMLElement>("[data-page-number]")
+        if (!pageLink || pageLink.tagName !== "A") return
+
+        const nextPage = Number(pageLink.dataset.pageNumber)
+        if (!nextPage || nextPage === currentPage) return
+
+        event.preventDefault()
+        currentPage = nextPage
+        syncHistory(currentPage, "push")
+        render()
+      })
+
+    window.addEventListener("popstate", (event) => {
+      const state = event.state as { tag?: string; page?: number } | null
+      activeTag = state?.tag ?? "all"
+      currentPage = state?.page ?? Number(section.dataset.currentPage ?? "1")
+      render()
+    })
+
+    syncHistory(currentPage, "replace")
+    render()
+  })
+</script>
+
+<style>
+  .blog-db__bar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-top: var(--space-s);
+
+    h1 {
+      font-family: "IBM Plex Sans", sans-serif;
+      font-size: var(--step-3);
+      letter-spacing: 0.05em;
+      color: var(--muted-foreground);
+    }
+  }
+
+  .blog-db__bar span {
+    font-size: var(--step--3);
+    letter-spacing: 0.12em;
+    color: var(--muted-foreground);
+  }
+
+  .blog-db__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .blog-filter-panel {
+    padding: 0.5rem 1rem;
+    background: color-mix(
+      in oklab,
+      var(--background) 97%,
+      var(--foreground) 3%
+    );
+  }
+
+  .blog-filter-panel__toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0;
+    cursor: pointer;
+    font-size: var(--step--2);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    user-select: none;
+  }
+
+  .blog-filter-panel__toggle::-webkit-details-marker {
+    display: none;
+  }
+
+  .blog-filter-panel__toggle::before {
+    content: "▸";
+    color: var(--muted-foreground);
+    font-size: var(--step--2);
+    line-height: 1;
+    transition: transform 120ms ease;
+  }
+
+  .blog-filter-panel[open] .blog-filter-panel__toggle::before {
+    transform: rotate(90deg);
+  }
+
+  .blog-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0;
+  }
+
+  .blog-filter__btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: var(--step--3);
+    letter-spacing: 0.1em;
+    padding: 0.24rem 0.52rem;
+    cursor: pointer;
+    transition:
+      color 120ms,
+      border-color 120ms;
+  }
+
+  .blog-filter__btn:hover,
+  .blog-filter__btn.is-active {
+    color: var(--destructive);
+    border-color: var(--destructive);
+  }
+
+  @media (width < 40rem) {
+    .blog-filter-panel {
+      padding: 0.5rem 0.7rem;
+    }
+
+    .blog-filter-row {
+      position: relative;
+      align-items: flex-start;
+    }
+
+    .blog-filter-row__label {
+      position: absolute;
+      left: 0;
+      top: 0.24rem;
+      min-width: 4.8rem;
+    }
+  }
+</style>

@@ -1,0 +1,701 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import MetaPage from "@/components/MetaPage.astro"
+import { getRecordEntries as getBookEntries } from "@/record/book"
+import { getRecordEntries as getFilmEntries } from "@/record/film"
+import { getRecordEntries as getGameEntries } from "@/record/game"
+import { getRecordEntries as getOtherEntries } from "@/record/other"
+
+const entries = [
+  ...getBookEntries(),
+  ...getFilmEntries(),
+  ...getGameEntries(),
+  ...getOtherEntries(),
+].sort((a, b) => {
+  if (!a.date && !b.date) return 0
+  if (!a.date) return 1
+  if (!b.date) return -1
+  return b.date.getTime() - a.date.getTime()
+})
+
+const toReleaseDecade = (releaseDate: string) => {
+  const year = Number(releaseDate)
+  if (Number.isNaN(year)) return "unknown"
+  if (year < 1000) {
+    return "pre-1000"
+  }
+  const decade = Math.floor(year / 10) * 10
+  return `${decade}s`
+}
+const releaseDecades = Array.from(
+  new Set(entries.map((entry) => toReleaseDecade(entry.releaseDate))),
+).sort((a, b) => {
+  if (a === "unknown") return 1
+  if (b === "unknown") return -1
+  if (a === "pre-1000") return 1
+  if (b === "pre-1000") return -1
+  return Number(b.replace("s", "")) - Number(a.replace("s", ""))
+})
+
+const countries = Array.from(
+  new Set(
+    entries.flatMap((entry) =>
+      entry.country?.length ? entry.country : ["unknown"],
+    ),
+  ),
+).sort((a, b) => {
+  if (a === "unknown") return 1
+  if (b === "unknown") return -1
+  return a.localeCompare(b)
+})
+---
+
+<Layout>
+  <MetaPage slot="head" title="RECORD" />
+
+  <section class="record" aria-label="Record dashboard">
+    <header class="record__bar">
+      <h1>RECORD</h1>
+      <span>{entries.length} ITEMS</span>
+    </header>
+
+    <div class="record__body">
+      <details class="record-filter-panel">
+        <summary class="record-filter-panel__toggle">FILTERS</summary>
+        <nav class="record-filters" aria-label="Record filters">
+          
+
+          <div class="record-filter-row" aria-label="Filter by category">
+            <span class="record-filter-row__label">CATEGORY</span>
+            <div class="record-filter-row__tags">
+              <button
+                data-filter-btn
+                data-filter-group="category"
+                data-filter-value="all"
+                class="record-filter__btn is-active"
+              >
+                ALL
+              </button>
+              <button data-filter-btn data-filter-group="category" data-filter-value="book" class="record-filter__btn">
+                BOOK
+              </button>
+              <button data-filter-btn data-filter-group="category" data-filter-value="movie" class="record-filter__btn">
+                FILM
+              </button>
+              <button data-filter-btn data-filter-group="category" data-filter-value="game" class="record-filter__btn">
+                GAME
+              </button>
+              <button data-filter-btn data-filter-group="category" data-filter-value="other" class="record-filter__btn">
+                OTHER
+              </button>
+            </div>
+          </div>
+
+          <div class="record-filter-row" aria-label="Filter by release decade">
+            <span class="record-filter-row__label">RELEASE</span>
+            <div class="record-filter-row__tags">
+              <button
+                data-filter-btn
+                data-filter-group="decade"
+                data-filter-value="all"
+                class="record-filter__btn is-active"
+              >
+                ALL
+              </button>
+              {releaseDecades.map((decade) => (
+                <button
+                  data-filter-btn
+                  data-filter-group="decade"
+                  data-filter-value={decade}
+                  class="record-filter__btn"
+                >
+                  {decade === "unknown" ? "UNKNOWN" : decade}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div class="record-filter-row" aria-label="Filter by country">
+            <span class="record-filter-row__label">COUNTRY</span>
+            <div class="record-filter-row__tags">
+              <button
+                data-filter-btn
+                data-filter-group="country"
+                data-filter-value="all"
+                class="record-filter__btn is-active"
+              >
+                ALL
+              </button>
+              {countries.map((country) => (
+                <button
+                  data-filter-btn
+                  data-filter-group="country"
+                  data-filter-value={country}
+                  class="record-filter__btn"
+                >
+                  {country === "unknown" ? "UNKNOWN" : country}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div class="record-filter-row" aria-label="Filter by status">
+            <span class="record-filter-row__label">STATUS</span>
+            <div class="record-filter-row__tags">
+              <button
+                data-filter-btn
+                data-filter-group="status"
+                data-filter-value="has-notes"
+                class="record-filter__btn"
+              >
+                HAS NOTES
+              </button>
+              <button
+                data-filter-btn
+                data-filter-group="status"
+                data-filter-value="favorite"
+                class="record-filter__btn"
+              >
+                FAVORITE
+              </button>
+              <button data-reset-btn class="record-filter__btn record-filter__btn--reset">
+                RESET
+              </button>
+            </div>
+          </div>
+        </nav>
+      </details>
+
+      <ul class="record-list">
+        {entries.map((item, index) => (
+          <li
+            data-entry
+            data-category={item.category}
+            data-decade={toReleaseDecade(item.releaseDate)}
+            data-country={JSON.stringify(item.country.length ? item.country : ["unknown"])}
+            data-release-date={item.releaseDate || ""}
+            data-has-notes={item.notes ? "true" : "false"}
+            data-favorite={item.favorite ? "true" : "false"}
+            data-original-index={index}
+          >
+            {item.url ? (
+              <a href={item.url} target="_blank" rel="noopener noreferrer" class="record-entry">
+                <span class="record-entry__date">{item.date?.toLocaleDateString("ja-JP") ?? "—"}</span>
+                <span class={`record-entry__tag record-entry__tag--${item.category}`}>
+                  {item.category === "book"
+                    ? "BOOK"
+                    : item.category === "movie"
+                      ? "FILM"
+                      : item.category === "game"
+                        ? "GAME"
+                        : "OTHER"}
+                </span>
+                <span class="record-entry__body">
+                  <span class="record-entry__topline">
+                    <span class="record-entry__title">{item.title}</span>
+                    {(item.creator || item.releaseDate || item.country.length > 0) && (
+                      <span class="record-entry__meta">
+                        {item.creator && (
+                          <span class="record-entry__meta-item">{item.creator}</span>
+                        )}
+                        {item.releaseDate && (
+                          <span class="record-entry__meta-item">{item.releaseDate}</span>
+                        )}
+                        {item.country.length > 0 && (
+                          <span class="record-entry__meta-item">{item.country.join(", ")}</span>
+                        )}
+                      </span>
+                    )}
+                  </span>
+                  {item.notes && <span class="record-entry__notes">{item.notes}</span>}
+                </span>
+              </a>
+            ) : (
+              <div class="record-entry">
+                <span class="record-entry__date">{item.date?.toLocaleDateString("ja-JP") ?? "—"}</span>
+                <span class={`record-entry__tag record-entry__tag--${item.category}`}>
+                  {item.category === "book"
+                    ? "BOOK"
+                    : item.category === "movie"
+                      ? "FILM"
+                      : item.category === "game"
+                        ? "GAME"
+                        : "OTHER"}
+                </span>
+                <span class="record-entry__body">
+                  <span class="record-entry__topline">
+                    <span class="record-entry__title">{item.title}</span>
+                    {(item.creator || item.releaseDate || item.country.length > 0) && (
+                      <span class="record-entry__meta">
+                        {item.creator && (
+                          <span class="record-entry__meta-item">{item.creator}</span>
+                        )}
+                        {item.releaseDate && (
+                          <span class="record-entry__meta-item">{item.releaseDate}</span>
+                        )}
+                        {item.country.length > 0 && (
+                          <span class="record-entry__meta-item">{item.country.join(", ")}</span>
+                        )}
+                      </span>
+                    )}
+                  </span>
+                  {item.notes && <span class="record-entry__notes">{item.notes}</span>}
+                </span>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <script>
+    
+    document.addEventListener("DOMContentLoaded", () => {
+      type FilterGroup = "category" | "decade" | "status" | "country"
+
+      const filterButtons = Array.from(
+        document.querySelectorAll<HTMLButtonElement>("[data-filter-btn]"),
+      )
+      const resetBtn = document.querySelector<HTMLButtonElement>("[data-reset-btn]")
+      const recordList = document.querySelector<HTMLElement>(".record-list")
+      const entries = Array.from(
+        document.querySelectorAll<HTMLElement>("[data-entry]"),
+      )
+
+      const selected: Record<FilterGroup, Set<string>> = {
+        category: new Set<string>(),
+        decade: new Set<string>(),
+        status: new Set<string>(),
+        country: new Set<string>(),
+      }
+
+      const isVisibleByFilter = (el: HTMLElement) => {
+        const cat = el.dataset.category || ""
+        const decade = el.dataset.decade || "unknown"
+        const hasNotes = el.dataset.hasNotes || "false"
+        const isFavorite = el.dataset.favorite || "false"
+        let countries: string[] = ["unknown"]
+        try {
+          const parsed = JSON.parse(el.dataset.country || "[]")
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            countries = parsed
+          }
+        } catch {
+          countries = ["unknown"]
+        }
+
+        const catOk = selected.category.size === 0 || selected.category.has(cat)
+        const decadeOk =
+          selected.decade.size === 0 || selected.decade.has(decade)
+        const statusOk =
+          selected.status.size === 0 ||
+          [...selected.status].some((status) => {
+            if (status === "has-notes") return hasNotes === "true"
+            if (status === "favorite") return isFavorite === "true"
+            return false
+          })
+        const countryOk =
+          selected.country.size === 0 ||
+          [...selected.country].some((selectedCountry) =>
+            countries.includes(selectedCountry),
+          )
+
+        return catOk && decadeOk && statusOk && countryOk
+      }
+
+      const setAllButtonState = (group: FilterGroup) => {
+        const allBtn = document.querySelector(
+          `[data-filter-group="${group}"][data-filter-value="all"]`,
+        ) as HTMLButtonElement | null
+        if (!allBtn) return
+
+        if (selected[group].size === 0) {
+          allBtn.classList.add("is-active")
+        } else {
+          allBtn.classList.remove("is-active")
+        }
+      }
+
+      const applyFilters = () => {
+        entries.forEach((el) => {
+          el.style.display = isVisibleByFilter(el) ? "" : "none"
+        })
+      }
+
+      filterButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const group = btn.dataset.filterGroup as FilterGroup | undefined
+          const value = btn.dataset.filterValue
+          if (!group || !value) return
+
+          const rowButtons = Array.from(
+            document.querySelectorAll<HTMLButtonElement>(
+              `[data-filter-group="${group}"]`,
+            ),
+          )
+
+          if (value === "all") {
+            selected[group].clear()
+            rowButtons.forEach((b) => {
+              if (b.dataset.filterValue === "all") b.classList.add("is-active")
+              else b.classList.remove("is-active")
+            })
+          } else {
+          if (group === "category" || group === "decade" || group === "country") {
+              const isAlreadySelected = selected[group].has(value)
+
+              selected[group].clear()
+              rowButtons.forEach((b) => {
+                if (b.dataset.filterValue !== "all") b.classList.remove("is-active")
+              })
+
+              if (!isAlreadySelected) {
+                selected[group].add(value)
+                btn.classList.add("is-active")
+              }
+            } else {
+              if (selected[group].has(value)) {
+                selected[group].delete(value)
+                btn.classList.remove("is-active")
+              } else {
+                selected[group].add(value)
+                btn.classList.add("is-active")
+              }
+            }
+
+            const allBtn = rowButtons.find((b) => b.dataset.filterValue === "all")
+            if (allBtn) allBtn.classList.remove("is-active")
+            setAllButtonState(group)
+          }
+
+          applyFilters()
+        })
+      })
+
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          // Clear all filters
+          Object.keys(selected).forEach((key) => {
+            selected[key as FilterGroup].clear()
+          })
+
+          // Reset all filter buttons to "all" state
+          filterButtons.forEach((btn) => {
+            const value = btn.dataset.filterValue
+            btn.classList.toggle("is-active", value === "all")
+          })
+
+          // Apply filters
+          applyFilters()
+        })
+      }
+    })
+  </script>
+
+  <style>
+    .record__bar {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-top: var(--space-s);
+
+      h1 {
+        font-family: "IBM Plex Sans", sans-serif;
+        font-size: var(--step-3);
+        letter-spacing: 0.05em;
+        color: var(--muted-foreground);
+        text-transform: uppercase;
+      }
+    }
+
+    .record__bar span {
+      font-size: var(--step--3);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+    }
+
+    .record__body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .record-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin: 0.5rem 0;
+    }
+
+    .record-filter-panel {
+      background: color-mix(
+        in oklab,
+        var(--background) 97%,
+        var(--foreground) 3%
+      );
+      padding: 0.5rem 1rem;
+    }
+
+    .record-filter-panel__toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.2rem 0;
+      cursor: pointer;
+      font-size: var(--step--2);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted-foreground);
+      user-select: none;
+    }
+
+    .record-filter-panel__toggle::-webkit-details-marker {
+      display: none;
+    }
+
+    .record-filter-panel__toggle::before {
+      content: "▸";
+      color: var(--muted-foreground);
+      font-size: var(--step--2);
+      line-height: 1;
+      transition: transform 120ms ease;
+    }
+
+    .record-filter-panel[open] .record-filter-panel__toggle::before {
+      transform: rotate(90deg);
+    }
+
+    .record-filter-row {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      align-items: start;
+      column-gap: 0.5rem;
+      margin: 0;
+    }
+
+    .record-filter-row__label {
+      min-width: 5rem;
+      font-size: var(--step--3);
+      letter-spacing: 0.1em;
+      color: var(--muted-foreground);
+    }
+
+    .record-filter-row__tags {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 0;
+    }
+
+    .record-filter__btn {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted-foreground);
+      font-size: var(--step--3);
+      letter-spacing: 0.1em;
+      padding: 0.24rem 0.52rem;
+      cursor: pointer;
+      transition:
+        color 120ms,
+        border-color 120ms;
+    }
+
+    .record-filter__btn.is-active {
+      color: var(--destructive);
+      border-color: var(--destructive);
+    }
+
+    @media (hover: hover) {
+      .record-filter__btn:hover {
+        color: var(--destructive);
+        border-color: var(--destructive);
+      }
+    }
+
+    @media (hover: none) {
+      .record-filter__btn:active {
+        color: var(--destructive);
+        border-color: var(--destructive);
+      }
+    }
+
+    .record-filter__btn--reset {
+      margin-left: auto;
+    }
+
+    .record-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .record-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 0.7rem 0rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--foreground);
+    }
+
+    a.record-entry:hover .record-entry__title {
+      color: var(--destructive);
+    }
+
+    .record-entry__date {
+      color: var(--muted-foreground);
+      white-space: nowrap;
+      flex-shrink: 0;
+      font-size: var(--step--3);
+      letter-spacing: 0.08em;
+      text-align: left;
+      min-width: 7em;
+    }
+
+    .record-entry__tag {
+      font-family:  Consolas, monospace;
+      border: 1px solid;
+      padding: 0.08rem 0.34rem;
+      flex-shrink: 0;
+      font-size: var(--step--3);
+      letter-spacing: 0.08em;
+    }
+
+    .record-entry__tag--book {
+      color: #eab308;
+      border-color: #eab308;
+    }
+
+    .record-entry__tag--movie {
+      color: #f97316;
+      border-color: #f97316;
+    }
+
+    .record-entry__tag--game {
+      color: #22c55e;
+      border-color: #22c55e;
+    }
+
+    .record-entry__tag--other {
+      color: var(--muted-foreground);
+      border-color: var(--border);
+    }
+
+    .record-entry__body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-width: 0;
+     
+    }
+
+    .record-entry__topline {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.8rem;
+      min-width: 0;
+    }
+
+    .record-entry__title {
+      font-size: var(--step--2);
+      line-height: 1.5;
+      letter-spacing: 0.01em;
+      min-width: 0;
+      overflow-wrap: break-word;
+      flex: 1;
+    }
+
+    .record-entry__meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.25rem 0.4rem;
+      font-size: var(--step--3);
+      letter-spacing: 0.06em;
+      color: var(--muted-foreground);
+      min-width: 0;
+    }
+
+    .record-entry__meta-item {
+      white-space: nowrap;
+    }
+
+    .record-entry__notes {
+      font-size: var(--step--3);
+      line-height: 1.6;
+      color: var(--muted-foreground);
+      min-width: 0;
+      overflow-wrap: break-word;
+      white-space: pre-line;
+    }
+
+    @media (width < 40rem) {
+      .record-filter-panel {
+        padding: 0.5rem 0.7rem;
+      }
+
+      .record-filter-row {
+        grid-template-columns: 4rem 1fr;
+      }
+
+      .record-filter-row__label {
+        min-width: 4rem;
+      }
+
+      .record-entry {
+        display: grid;
+        grid-template-columns: auto auto 1fr;
+        grid-template-areas:
+          "date tag title"
+          ". . meta"
+          ". . notes";
+        align-items: start;
+        column-gap: 0.45rem;
+        row-gap: 0.2rem;
+      }
+
+      .record-entry__date {
+        grid-area: date;
+        inline-size: var(--record-entry-date-col, 3.5rem);
+      }
+
+      .record-entry__tag {
+        grid-area: tag;
+      }
+
+      .record-entry__topline {
+        grid-area: title;
+        display: contents;
+      }
+
+      .record-entry__title {
+        grid-area: title;
+      }
+
+      .record-entry__meta {
+        grid-area: meta;
+        justify-content: flex-start;
+      }
+
+      .record-entry__body {
+        display: contents;
+      }
+
+      .record-entry__notes {
+        grid-area: notes;
+      }
+    }
+  </style>
+  <style is:global>
+@media screen and (width >= 64rem) {
+  page-content {
+    padding-inline-end: clamp(8rem, 6vw, 10rem) !important;
+  }
+}
+</style>
+</Layout>

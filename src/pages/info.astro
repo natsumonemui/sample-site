@@ -1,0 +1,150 @@
+---
+import MetaPage from "@/components/MetaPage.astro"
+import Layout from "@/layouts/Layout.astro"
+---
+
+<Layout>
+  <MetaPage slot="head" title="INFO" />
+  <div class="info">
+    <div class="info__grid">
+      <article class="info__panel">
+        <div class="info__panelbody">
+          <p class="info__about-text">
+            当サイトは個人が運営する非公式ファンサイトです。原作・公式関係者様とは一切関係ありません。<br>
+            サイト名：min-width<br>
+            URL：https://min-width.com<br>
+            管理人：特盛<br>
+            <a href="https://wavebox.me/wave/8fe8732s176j2qk8/" target="_blank" rel="noopener noreferrer" class="info__link">Wavebox</a><br>
+            <a href="https://min-width.com/rss.xml" target="_blank" rel="noopener noreferrer" class="info__link">RSS</a>
+          </p>
+        </div>
+      </article>
+
+      <article class="info__panel">
+          <span class="info__paneltitle">CAUTION</span>
+        <div class="info__panelbody">
+          <p class="info__sectiontitle">【禁止事項】</p>
+          <ul class="info__list">
+            <li>無断転載・転用・複製、自作発言</li>
+            <li>不特定多数の目に触れる可能性のある場所・端末での閲覧</li>
+            <li>AI学習・データ収集目的で利用する行為</li>
+            <li>18歳未満および高校在学中の方のR18作品閲覧</li>
+            <li>オンラインブックマーク</li>
+            <li>その他迷惑行為</li> 
+          </ul>
+          <br>
+          <p class="info__sectiontitle">【注意事項】</p>
+          <p class="info__text">
+            二次創作の一部に、暴力や流血の描写、キャラクターの死などの内容を含みます。<br>
+            これらはフィクション上の表現であり、暴力や犯罪、過激な行為を肯定・助長する意図は一切ありません。<br>
+            閲覧は自己責任でお願いいたします。
+          </p>
+        </div>
+      </article>
+
+  <article class="info__panel">
+          <span class="info__paneltitle">LICENSE</span>
+        <div class="info__panelbody">
+          <p class="info__text">
+            このサイトはAstroを用いて構築しています。
+          </p>
+          <p class="info__license-text">
+            Theme: erudite<br>
+            - Copyright (c) 2026 enscribe<br>
+            - Released under the MIT license<br>
+            - https://github.com/jktrn/astro-erudite/blob/main/LICENSE<br></p>
+        </div>
+      </article>
+
+      <article class="info__panel">
+          <span class="info__paneltitle">LIKES</span>
+        <div class="info__panelbody">
+          <p class="info__sectiontitle">【好きな傾向】</p>
+          <p class="info__text">
+            書くのは男男が多いですが、男女、女男、女女、オールキャラ、夢なども見ます！
+          </p>
+         <ul class="info__list">
+            <li>ゲームの分岐で仲間ルート・敵対ルートの両方が存在している</li>
+            <li>恋愛感情なし好意ありカップリング</li>
+            <li>リーダーポジ一人・部下ポジ二人の三人組</li>
+            <li>年下主人公攻め</li>
+          </ul>
+          <p class="info__text">などに当てはまるところを好きになりがち
+          </p>
+        </div>
+      </article>
+      
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .info__panelbody {
+    margin-bottom: 2rem;
+  }
+
+  .info__paneltitle {
+    font-size: var(--step-3);
+    letter-spacing: 0.03em;
+    color: var(--muted-foreground);
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+
+  .info__sectiontitle {
+    font-size: var(--step--1);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.3rem;
+  }
+ .info__about-text {
+    margin-top: var(--space-s);
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    line-height: 1.65;
+    color: var(--muted-foreground);
+  }
+  .info__link {
+    color: var(--destructive);
+    transition: color 120ms;
+    letter-spacing: 0.05em;
+  }
+  .info__text {
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    line-height: 1.65;
+    color: var(--muted-foreground);
+  }
+  .info__text:last-child {
+    margin-bottom: 0;
+  }
+
+  .info__list {
+    font-size: var(--step--1);
+    color: var(--muted-foreground);
+    letter-spacing: 0.02em;
+    line-height: 1.65;
+  }
+
+  .info__list li {
+    margin: 0.1rem 0;
+  }
+
+  .info__list li::before {
+    content: "・ ";
+    color: var(--muted-foreground);
+  }
+  .info__license-text {
+    font-size: var(--step--1);
+    letter-spacing: 0.02em;
+    line-height: 1.65;
+    color: var(--muted-foreground);
+    font-style: italic;
+    padding-inline-start: var(--space-2xs);
+  }
+</style>
+<style is:global>
+@media screen and (width >= 64rem) {
+  page-content {
+    padding-inline-end: clamp(8rem, 6vw, 10rem) !important;
+  }
+}
+</style>

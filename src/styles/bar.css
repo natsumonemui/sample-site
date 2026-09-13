@@ -1,0 +1,7 @@
+[data-bar] {
+  @media (width < 64rem) {
+    padding-block: var(--space-2xs);
+    padding-inline: var(--bar-gutter);
+    background-color: var(--background);
+  }
+}

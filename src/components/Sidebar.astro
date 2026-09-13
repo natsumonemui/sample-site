@@ -1,0 +1,442 @@
+---
+
+import ThemeToggle from "@/components/ThemeToggle.astro"
+import { NAVIGATION, SITE } from "@/consts"
+import { normalizePath } from "@/lib/utils"
+
+type Props = { crumbs?: { label: string; href: string }[] }
+
+const { crumbs = [] } = Astro.props
+const pathname = normalizePath(Astro.url.pathname) || "/"
+const section = NAVIGATION.find(
+  ({ href }) => pathname === href || pathname.startsWith(`${href}/`),
+)
+---
+
+<aside data-bar>
+  <sidebar-inner>
+    <a href="/" aria-label={SITE.title}>
+      <span>{SITE.title}</span>
+    </a>
+    <nav>
+      <ul class="desktop-nav">
+        {NAVIGATION.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+              {item === section && crumbs.length > 0 && pathname !== item.href && (
+                <ul>
+                  {crumbs.map((crumb, i) => (
+                    <li data-depth={i ? 1 : undefined}>
+                      <a
+                        href={crumb.href}
+                        aria-current={
+                          i === crumbs.length - 1 ? "page" : undefined
+                        }
+                      >
+                        {crumb.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        {!section &&
+            crumbs.map((crumb, i) => (
+              <li data-depth={i ? 1 : undefined}>
+                <a
+                  href={crumb.href}
+                  aria-current={i === crumbs.length - 1 ? "page" : undefined}
+                >
+                  {crumb.label}
+                </a>
+              </li>
+            ))}
+      </ul>
+    </nav>
+  </sidebar-inner>
+  <!-- Mobile hamburger button + overlay menu -->
+  <div class="mobile-controls">
+    <button
+      data-mobile-toggle
+      aria-controls="mobile-nav"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+      class="mobile-hamburger"
+    >
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+    <div class="mobile-backdrop" data-mobile-backdrop aria-hidden="true"></div>
+    <div id="mobile-nav" class="mobile-nav" aria-hidden="true">
+      <nav>
+        <ul>
+          {NAVIGATION.map((item) => (
+            <li>
+              <a href={item.href} data-mobile-link>{item.label}</a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <script>
+    import "./sidebar-toggle.ts"
+  </script>
+  <sidebar-toggle>
+    <ThemeToggle />
+    <slot name="actions" />
+  </sidebar-toggle>
+  <nav class="mobile-footer-nav" aria-label="Mobile footer navigation">
+    <ul>
+      {NAVIGATION.map((item) => (
+        <li>
+          <a
+            href={item.href}
+            aria-current={pathname === item.href ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+</aside>
+
+<style>
+  /* ─── base ─── */
+  aside {
+    display: flex;
+    flex-direction: column;
+    background-color: var(--background); 
+
+    @media (width < 64rem) {
+      position: static;
+      height: auto;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-s);
+    }
+  }
+
+  /* ─── logo / site title ─── */
+  sidebar-inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-s);
+
+    > a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: fit-content;
+      text-decoration-line: none;
+      color: var(--foreground);
+
+      svg {
+        inline-size: 1rem;
+        block-size: 1rem;
+        flex-shrink: 0;
+        color: var(--accent, #f97316);
+      }
+
+      span {
+        font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+        font-size: var(--step-2);
+        letter-spacing: 0.05em;
+        color: var(--muted-foreground);
+        font-weight: 500;
+        text-wrap: nowrap;
+      }
+    }
+
+    @media (width < 64rem) {
+      flex: 1;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+
+      nav {
+        margin-inline-start: auto;
+      }
+
+      nav > .desktop-nav {
+        justify-content: flex-end;
+      }
+    }
+  }
+
+  /* ─── nav ─── */
+  nav ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2xs);
+
+    a {
+      display: block;
+      font-size: var(--step--2);
+      letter-spacing: 0.12em;
+      color: var(--muted-foreground);
+      text-decoration: none;
+      transition: color 120ms;
+
+
+      &:hover {
+        color: var(--accent, #f97316);
+      }
+
+      &[aria-current="page"] {
+        color: var(--accent, #f97316);
+      }
+    }
+
+    li[data-depth="1"] a {
+      margin-inline-start: var(--space-xs);
+    }
+
+    ul {
+      margin-block-start: var(--space-3xs);
+
+      a {
+        margin-inline-start: var(--space-xs);
+      }
+
+      li[data-depth="1"] a {
+        margin-inline-start: calc(2 * var(--space-xs));
+      }
+    }
+
+    @media (width < 64rem) {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-s);
+
+      ul {
+        display: none;
+      }
+    }
+  }
+
+  nav li:has(> ul) > a {
+    @media (width < 64rem) {
+      color: var(--accent, #f97316);
+    }
+  }
+
+  /* ─── sidebar-toggle (theme + actions) ─── */
+  sidebar-toggle {
+    display: flex;
+    align-items: center;
+    margin-inline-start: -0.5rem;
+    padding-block-start: var(--space-s);
+
+    @media (width < 64rem) {
+      margin-inline-start: auto;
+      padding-block-start: 0;
+      border-top: none;
+      justify-content: flex-end;
+
+      :global(.theme-settings) {
+        margin-inline-start: auto;
+      }
+
+      :global(.theme-settings__toggle) {
+        margin-inline-start: auto;
+      }
+    }
+  }
+
+  /* ─── Mobile hamburger (<= 40rem) ─── */
+  .mobile-controls {
+    display: none;
+  }
+
+  .mobile-footer-nav {
+    display: none;
+  }
+
+  @media (width < 40rem) {
+    nav > .desktop-nav {
+      display: none !important;
+    }
+
+    :global(main) {
+      padding-bottom: calc(56px + env(safe-area-inset-bottom) + var(--space-s));
+    }
+
+    sidebar-toggle {
+      order: 2;
+      margin-inline-start: 0;
+    }
+
+    .mobile-controls {
+      display: flex;
+      order: 3;
+      align-items: center;
+      gap: var(--space-s);
+      margin-inline-start: auto;
+      pointer-events: auto;
+    }
+
+    .mobile-hamburger {
+      display: inline-flex;
+      position: relative;
+      z-index: 45;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 0.3rem;
+      background: transparent;
+      border: 0;
+      cursor: pointer;
+    }
+
+    .mobile-backdrop {
+      position: fixed;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      background: transparent;
+      transition: opacity 180ms ease;
+      z-index: 35;
+      background-color: rgba(0, 0, 0, 0.3);
+    }
+
+    .mobile-controls[data-open="true"] .mobile-backdrop {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mobile-hamburger .bar {
+      display: block;
+      width: 1.35rem;
+      height: 1px;
+      background: var(--accent, #f97316);
+      transition:
+        transform 200ms ease,
+        opacity 200ms ease;
+    }
+
+    .mobile-controls[data-open="true"] .mobile-hamburger .bar:nth-child(1) {
+      transform: translateY(6.5px) rotate(45deg);
+    }
+    .mobile-controls[data-open="true"] .mobile-hamburger .bar:nth-child(2) {
+      opacity: 0;
+    }
+    .mobile-controls[data-open="true"] .mobile-hamburger .bar:nth-child(3) {
+      transform: translateY(-6.5px) rotate(-45deg);
+    }
+
+    .mobile-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: min(50vw);
+      max-width: calc(100vw - var(--space-s));
+      background: var(--background);
+      padding: var(--space-s);
+      transform: translateX(100%);
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        transform 220ms ease,
+        opacity 220ms ease;
+      z-index: 40;
+      height: 100%;
+      background-color: var(--background);
+    }
+
+    .mobile-nav[data-open="true"] {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .mobile-nav nav ul {
+      padding: var(--space-m);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mobile-nav a {
+      letter-spacing: 0.12em;
+      color: var(--muted-foreground);
+      padding: 0.58rem 0.3rem;
+      display: block;
+      inline-size: 100%;
+      font-size: var(--step--2);
+    }
+
+    .mobile-nav a:hover,
+    .mobile-nav a:focus-visible,
+    .mobile-nav a:active {
+      color: var(--accent, #f97316);
+    }
+
+    .mobile-footer-nav {
+      display: block;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      z-index: 34;
+      background: var(--background);
+      padding-bottom: env(safe-area-inset-bottom);
+      transform: translateY(0);
+      transition: transform 220ms ease;
+      will-change: transform;
+      pointer-events: auto;
+    }
+
+    .mobile-footer-nav[data-hidden="true"] {
+      transform: translateY(calc(100% + env(safe-area-inset-bottom)));
+      pointer-events: none;
+    }
+
+    .mobile-footer-nav ul {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+    }
+
+    .mobile-footer-nav li {
+      flex: 1;
+    }
+
+    .mobile-footer-nav a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-block-size: 5vh;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: var(--muted-foreground);
+      font-size: var(--step--3);
+      line-height: 1.2;
+    }
+
+    .mobile-footer-nav a[aria-current="page"] {
+      color: var(--accent, #f97316);
+      box-shadow: inset 0 -2px 0 var(--accent, #f97316);
+    }
+
+    .mobile-footer-nav a:hover {
+      color: var(--muted-foreground);
+    }
+
+    .mobile-footer-nav a:active,
+    .mobile-footer-nav a:focus-visible {
+      color: var(--accent, #f97316);
+    }
+    aside{
+      z-index: 50;
+    }
+  }
+</style>

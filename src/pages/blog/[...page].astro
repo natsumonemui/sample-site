@@ -1,0 +1,58 @@
+---
+import type { GetStaticPaths } from "astro"
+import MetaPage from "@/components/MetaPage.astro"
+import PaginatedPostIndex from "@/components/PaginatedPostIndex.astro"
+import Layout from "@/layouts/Layout.astro"
+import { getPosts } from "@/lib/content"
+
+type Props = {
+  page: {
+    data: Awaited<ReturnType<typeof getPosts>>
+    currentPage: number
+    lastPage: number
+  }
+  allPosts: Awaited<ReturnType<typeof getPosts>>
+  allTags: string[]
+  totalPosts: number
+}
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const posts = await getPosts()
+  const allTags = Array.from(
+    new Set(posts.flatMap((post) => post.data.tags ?? [])),
+  ).sort((a, b) => a.localeCompare(b, "ja-JP"))
+
+  const routes = paginate(posts, {
+    pageSize: 10,
+    props: {
+      allPosts: posts,
+      allTags,
+      totalPosts: posts.length,
+    },
+  })
+
+  return routes.slice(1).map((route, index) => ({
+    params: {
+      ...route.params,
+      page: `page${index + 2}`,
+    },
+    props: route.props,
+  }))
+}) satisfies GetStaticPaths
+
+const { page, allPosts, allTags, totalPosts } = Astro.props as Props
+---
+
+<Layout>
+  <MetaPage slot="head" title="BLOG" />
+  <PaginatedPostIndex
+    title="BLOG"
+    posts={page.data}
+    allPosts={allPosts}
+    allTags={allTags}
+    totalPosts={totalPosts}
+    basePath="blog"
+    currentPage={page.currentPage}
+    lastPage={page.lastPage}
+  />
+</Layout>
