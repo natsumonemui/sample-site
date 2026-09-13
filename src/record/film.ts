@@ -85,7 +85,6 @@ const recordEntries: RecordEntry[] = [
   category: "movie",
   releaseDate: "1963",
   country: ["GB"],
-  notes: "萌え❣️",
   favorite: true,
 },
 {
