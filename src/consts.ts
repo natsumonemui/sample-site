@@ -2,7 +2,7 @@ import type { SvgComponent } from "astro/types"
 import RSS from "@/assets/icons/rss.svg"
 
 export const SITE = {
-  title: "min-width",
+  title: "sample",
   description: "記録場",
   locale: "ja-JP",
   dir: "ltr",
@@ -12,11 +12,10 @@ export const SITE = {
 
 export const NAVIGATION = [
   { href: "/", label: "HOME" },
-  { href: "/info", label: "INFO" },
-  { href: "/novel", label: "NOVEL" },
+  { href: "", label: "INFO" },
   { href: "/blog", label: "BLOG" },
-  { href: "/record", label: "RECORD" },
-  { href: "https://min-width.lsv.jp/tega", label: "TEGALOG" }
+  { href: "", label: "REVIEW" },
+  { href: "/record", label: "RECORD" }
 ]
 
 export const SOCIALS: { href: string; label: string; icon: SvgComponent }[] = [

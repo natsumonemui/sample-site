@@ -56,8 +56,7 @@ const linkBanners = [
         <div class="home__panelbody">
           <p class="home__about-text">
             趣味や日々の記録をまとめている個人サイトです📝<br>
-            つぶやきを中心に、読書・映画・ゲームの記録、ブログ、二次創作小説などを更新しています。<br>
-            初めての方は<a href="/info" class="home__info-link">INFO</a>をご一読ください。
+            つぶやきを中心に、読書・映画・ゲームの記録、ブログ、レビューなどを更新しています。<br>
           </p>
         </div>
       </article>
@@ -124,34 +123,17 @@ const linkBanners = [
       </article>
     </div>
 
-    <article class="home__panel home__panel--link-banner">
-      <div class="home__panelbar">
-        <span class="home__paneltitle">LINK</span>
-      </div>
-      <div class="home__panelbody home__panelbody--banner">
-        <ul class="home__banner-grid" aria-label="Link banners">
-          {linkBanners.map((banner, index) => (
-            <li class="home__banner-item">
-              <a
-                href={banner.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                class="home__banner-link"
-                aria-label={`Open link banner ${index + 1}`}
-              >
-                <Image
-                  src={banner.image}
-                  alt={`Link Banner ${index + 1}`}
-                  class="home__banner-image"
-                  loading="lazy"
-                  sizes="(max-width: 40rem) 50vw, (max-width: 64rem) 25vw, 20vw"
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </article>
+    <article class="home__panel">
+          <span class="home__paneltitle">LICENSE</span>
+        <div class="home__panelbody">
+          <p class="home__about-text">
+            このサイトはAstroを用いて構築しています。<br>
+            Theme: erudite<br>
+            - Copyright (c) 2026 enscribe<br>
+            - Released under the MIT license<br>
+            - https://github.com/jktrn/astro-erudite/blob/main/LICENSE<br></p>
+        </div>
+      </article>
   </div>
 </Layout>
 
